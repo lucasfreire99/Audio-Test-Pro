@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Audio Test Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- PWA CONFIG -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f14">
+
+<!-- Ícones -->
+<link rel="icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- === ESTILO DARK MODERNO + DASHBOARD + MOBILE === -->
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", Arial, sans-serif;
+        background: #0d0f14;
+        color: #dbe7ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h1 {
+        margin-top: 25px;
+        font-size: 28px;
+        color: #6fb3ff;
+        text-align: center;
+    }
+
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        width: 95%;
+        max-width: 1100px;
+        margin-top: 30px;
+    }
+
+    .card {
+        background: #161b22;
+        padding: 20px;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid #232b36;
+        box-shadow: 0 0 15px #000;
+    }
+
+    .card h2 {
+        margin-bottom: 15px;
+        color: #85c1ff;
+        font-size: 18px;
+    }
+
+    button {
+        width: 90%;
+        padding: 12px;
+        margin: 6px 0;
+        border: none;
+        border-radius: 10px;
+        background: #223142;
+        color: #dce8ff;
+        font-size: 15px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    button:hover {
+        transform: scale(1.04);
+        background: #294056;
+    }
+
+    canvas {
+        width: 100%;
+        border-radius: 12px;
+        margin-top: 15px;
+        background: #0b0e13;
+        border: 1px solid #1a1f29;
+    }
+
+    .icon {
+        font-size: 42px;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎧 Audio Test Pro – Painel Completo</h1>
+
+<div class="dashboard">
+
+<!-- FREQUÊNCIAS -->
+<div class="card">
+    <div class="icon">🎵</div>
+    <h2>Frequências</h2>
+    <button onclick="playTone(60)">60 Hz (Grave)</button>
+    <button onclick="playTone(440)">440 Hz</button>
+    <button onclick="playTone(1000)">1 kHz</button>
+    <button onclick="playTone(8000)">8 kHz</button>
+</div>
+
+<!-- SUBWOOFER -->
+<div class="card">
+    <div class="icon">🔊</div>
+    <h2>Subwoofer / LFE</h2>
+    <button onclick="playSubwoofer()">30 Hz Pulsante</button>
+</div>
+
+<!-- ESTÉREO -->
+<div class="card">
+    <div class="icon">🎚️</div>
+    <h2>Estéreo</h2>
+    <button onclick="playStereo('left')">Esquerdo</button>
+    <button onclick="playStereo('right')">Direito</button>
+</div>
+
+<!-- FASE -->
+<div class="card">
+    <div class="icon">🔄</div>
+    <h2>Teste de Fase</h2>
+    <button onclick="playPhase(0)">Normal</button>
+    <button onclick="playPhase(180)">Invertida 180°</button>
+</div>
+
+<!-- SWEEP -->
+<div class="card">
+    <div class="icon">📈</div>
+    <h2>Sweep 20 Hz → 20 kHz</h2>
+    <button onclick="playSweep()">Iniciar Sweep</button>
+</div>
+
+<!-- RUÍDO -->
+<div class="card">
+    <div class="icon">🌫️</div>
+    <h2>Ruído e Volume</h2>
+    <button onclick="playWhiteNoise()">Ruído Branco</button>
+    <button onclick="volumeRamp()">Volume Progressivo</button>
+</div>
+
+<!-- PARAR -->
+<div class="card">
+    <div class="icon">⏹️</div>
+    <h2>Controles</h2>
+    <button onclick="stopSound()">Parar Tudo</button>
+</div>
+
+<!-- OSCILOSCÓPIO -->
+<div class="card" style="grid-column: 1 / -1;">
+    <div class="icon">📊</div>
+    <h2>Osciloscópio</h2>
+    <canvas id="oscilloscope" height="200"></canvas>
+</div>
+
+<!-- FFT -->
+<div class="card" style="grid-column: 1 / -1;">
+    <div class="icon">📡</div>
+    <h2>Analyzer de Frequência (FFT)</h2>
+    <canvas id="fft" height="200"></canvas>
+</div>
+
+</div>
+
+<script>
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator, noiseSource, sweepOsc, gainNode;
+
+let analyser = audioCtx.createAnalyser();
+analyser.fftSize = 2048;
+
+let fftAnalyzer = audioCtx.createAnalyser();
+fftAnalyzer.fftSize = 2048;
+
+/* === OSCILOSCÓPIO === */
+const scopeCanvas = document.getElementById("oscilloscope");
+const scopeCtx = scopeCanvas.getContext("2d");
+
+function drawScope() {
+    requestAnimationFrame(drawScope);
+    let buffer = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(buffer);
+
+    scopeCtx.fillStyle = "#0b0e13";
+    scopeCtx.fillRect(0, 0, scopeCanvas.width, scopeCanvas.height);
+
+    scopeCtx.strokeStyle = "#57a2ff";
+    scopeCtx.lineWidth = 2;
+    scopeCtx.beginPath();
+
+    let slice = scopeCanvas.width / buffer.length;
+    let x = 0;
+
+    for (let i = 0; i < buffer.length; i++) {
+        let v = buffer[i] / 128;
+        let y = v * scopeCanvas.height / 2;
+        i === 0 ? scopeCtx.moveTo(x, y) : scopeCtx.lineTo(x, y);
+        x += slice;
+    }
+    scopeCtx.stroke();
+}
+drawScope();
+
+/* === FFT === */
+const fftCanvas = document.getElementById("fft");
+const fftCtx = fftCanvas.getContext("2d");
+
+function drawFFT() {
+    requestAnimationFrame(drawFFT);
+    let data = new Uint8Array(fftAnalyzer.frequencyBinCount);
+    fftAnalyzer.getByteFrequencyData(data);
+
+    fftCtx.fillStyle = "#0b0e13";
+    fftCtx.fillRect(0, 0, fftCanvas.width, fftCanvas.height);
+
+    let barWidth = (fftCanvas.width / data.length) * 2;
+    let x = 0;
+
+    for (let i = 0; i < data.length; i++) {
+        let h = data[i];
+        fftCtx.fillStyle = `rgb(${h+40},${h},255)`;
+        fftCtx.fillRect(x, fftCanvas.height - h, barWidth, h);
+        x += barWidth + 1;
+    }
+}
+drawFFT();
+
+/* === ÁUDIO === */
+function stopSound() {
+    if (oscillator) oscillator.stop();
+    if (noiseSource) noiseSource.stop();
+    if (sweepOsc) sweepOsc.stop();
+}
+
+function connect(node) {
+    node.connect(analyser);
+    node.connect(fftAnalyzer);
+    analyser.connect(audioCtx.destination);
+}
+
+function playTone(f) {
+    stopSound();
+    oscillator = audioCtx.createOscillator();
+    oscillator.frequency.value = f;
+    connect(oscillator);
+    oscillator.start();
+}
+
+function playStereo(side) {
+    stopSound();
+    oscillator = audioCtx.createOscillator();
+    let p = audioCtx.createStereoPanner();
+    p.pan.value = side === "left" ? -1 : 1;
+    oscillator.connect(p);
+    connect(p);
+    oscillator.start();
+}
+
+function playSubwoofer() {
+    stopSound();
+    oscillator = audioCtx.createOscillator();
+    oscillator.frequency.value = 30;
+    let gain = audioCtx.createGain();
+    let lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 2;
+    lfo.connect(gain.gain);
+    oscillator.connect(gain);
+    connect(gain);
+    oscillator.start();
+    lfo.start();
+}
+
+function playWhiteNoise() {
+    stopSound();
+    let b = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
+    let d = b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = b;
+    noiseSource.loop = true;
+    connect(noiseSource);
+    noiseSource.start();
+}
+
+function playSweep() {
+    stopSound();
+    sweepOsc = audioCtx.createOscillator();
+    sweepOsc.frequency.setValueAtTime(20, audioCtx.currentTime);
+    sweepOsc.frequency.exponentialRampToValueAtTime(20000, audioCtx.currentTime + 6);
+    connect(sweepOsc);
+    sweepOsc.start();
+    sweepOsc.stop(audioCtx.currentTime + 6);
+}
+
+function playPhase(deg) {
+    stopSound();
+    oscillator = audioCtx.createOscillator();
+    oscillator.frequency.value = 440;
+
+    let gain = audioCtx.createGain();
+    gain.gain.value = deg === 180 ? -1 : 1;
+
+    oscillator.connect(gain);
+    connect(gain);
+    oscillator.start();
+}
+
+function volumeRamp() {
+    stopSound();
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(1, audioCtx.currentTime + 5);
+    oscillator.connect(gainNode);
+    connect(gainNode);
+    oscillator.start();
+}
+
+/* === REGISTRA SERVICE WORKER (PWA) === */
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+</body>
+</html>
