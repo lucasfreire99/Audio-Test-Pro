@@ -4,38 +4,18 @@ Audio Test Pro é uma ferramenta completa para testar sistemas de áudio, inclui
 Inclui também visualização em tempo real com osciloscópio, FFT e suporte a PWA instalável.
 
 🚀 Funcionalidades
-
 🔊 Tons de teste (60 Hz, 440 Hz, 1 kHz, 8 kHz)
-
 🎚️ Teste de estéreo (esquerdo / direito)
-
 💥 Subwoofer LFE (30 Hz pulsante)
-
 🔄 Teste de fase (normal / invertida 180°)
-
 📈 Sweep de 20 Hz → 20 kHz
-
 🌫️ Ruído branco
-
 📢 Volume progressivo
-
 📊 Osciloscópio em tempo real
-
 📡 Analyzer de frequência (FFT)
-
 📱 PWA instalável (funciona offline)
 
 📦 Como usar
-
-Baixe ou clone o repositório:
-
-git clone https://github.com/SEU-USUARIO/Audio-Test-Pro
-
-
-Abra o arquivo:
-
-index.html
-
 
 O site funciona instantaneamente no navegador.
 
@@ -50,16 +30,6 @@ iOS:
 Safari → Compartilhar → Adicionar à Tela de Início
 
 O app funciona offline após instalado.
-
-📁 Estrutura do projeto
-Audio-Test-Pro/
-│ index.html
-│ manifest.json
-│ service-worker.js
-│ README.md
-└── icons/
-   ├── icon-192.png
-   └── icon-512.png
 
 📄 Licença
 
