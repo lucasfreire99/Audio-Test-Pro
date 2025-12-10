@@ -4,6 +4,9 @@ Um painel completo para testar e analisar sistemas de áudio!
 O Audio Test Pro oferece ferramentas profissionais para testes de frequência, estéreo, subwoofer, fase, ruídos, além de visualização em tempo real com osciloscópio e FFT.
 Totalmente responsivo, moderno e agora também um PWA instalável.
 
+## 🔗 Link
+- [Audio Test Pro](https://lucasfreire99.github.io/Audio-Test-Pro/)
+
 ## 🚀 Recursos Principais
 
 - 🔊 Testes de Áudio
